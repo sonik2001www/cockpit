@@ -1,3 +1,5 @@
+import uuid
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -57,8 +59,14 @@ class EntityViewSet(viewsets.ViewSet):
 
     # POST /api/v1/entities
     def create(self, request):
-        s = EntityCreateSerializer(data=request.data); s.is_valid(raise_exception=True)
-        row, created = upsert_entity(actor="api", change_ts=None, **s.validated_data)
+        s = EntityCreateSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+
+        payload = s.validated_data.copy()
+        if "entity_uid" not in payload:
+            payload["entity_uid"] = uuid.uuid4()
+
+        row, created = upsert_entity(actor="api", change_ts=None, **payload)
 
         if created:
             st = status.HTTP_201_CREATED
@@ -69,12 +77,24 @@ class EntityViewSet(viewsets.ViewSet):
 
     # PATCH /api/v1/entities/{uid}
     def partial_update(self, request, pk=None):
-        payload = {"entity_uid": pk,
-                   "entity_type_code": request.data.get("entity_type_code"),
-                   "display_name": request.data.get("display_name")}
+        obj = Entity.objects.filter(entity_uid=pk, is_current=True).first()
+        if not obj:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-        row, _ = upsert_entity(actor="api", change_ts=None, **payload)
-        return Response(EntityResponseSerializer(row).data)
+        payload = {
+            "entity_uid": pk,
+            "entity_type_code": request.data.get("entity_type_code") or obj.entity_type.code,
+            "display_name": request.data.get("display_name") or obj.display_name,
+        }
+
+        row, created = upsert_entity(actor="api", change_ts=None, **payload)
+
+        if created:
+            st = status.HTTP_201_CREATED
+        else:
+            st = status.HTTP_200_OK
+
+        return Response(EntityResponseSerializer(row).data, status=st)
 
     # GET /api/v1/entities/{uid}/history
     @action(detail=True, methods=["get"])
