@@ -1,0 +1,13 @@
+asgiref==3.9.2
+Django==5.2.6
+django-environ==0.12.0
+djangorestframework==3.16.1
+iniconfig==2.1.0
+packaging==25.0
+pluggy==1.6.0
+psycopg==3.2.10
+psycopg-binary==3.2.10
+Pygments==2.19.2
+pytest==8.4.2
+pytest-django==4.11.1
+sqlparse==0.5.3
