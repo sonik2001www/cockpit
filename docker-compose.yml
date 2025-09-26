@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: cockpit_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      RUNNING_IN_DOCKER: "1"
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py createsuperuser --noinput || true &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  db:
+    image: postgres:15
+    container_name: cockpit_db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
