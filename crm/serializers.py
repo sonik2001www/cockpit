@@ -3,7 +3,9 @@ from .models import EntityType, Entity, EntityDetail
 
 
 class EntityTypeSerializer(serializers.ModelSerializer):
-    class Meta: model = EntityType; fields = ["id","code","name"]
+    class Meta:
+        model = EntityType
+        fields = ["id", "code", "name"]
 
 
 class EntityCreateSerializer(serializers.Serializer):
@@ -15,7 +17,7 @@ class EntityCreateSerializer(serializers.Serializer):
 class EntityResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Entity
-        fields = ["entity_uid","display_name","valid_from","valid_to","is_current"]
+        fields = ["entity_uid", "display_name", "valid_from", "valid_to", "is_current"]
 
 
 class DetailSerializer(serializers.Serializer):

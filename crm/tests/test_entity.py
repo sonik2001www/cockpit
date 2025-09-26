@@ -77,12 +77,16 @@ def test_api_entity_update_scd2(api_client, entity_type):
     uid = resp.data["entity_uid"]
 
     # PATCH display_name
-    resp2 = api_client.patch(f"/api/v1/entities/{uid}/", {"display_name": "Alicia"}, format="json")
+    resp2 = api_client.patch(
+        f"/api/v1/entities/{uid}/", {"display_name": "Alicia"}, format="json"
+    )
     assert resp2.status_code == 201
     assert resp2.data["display_name"] == "Alicia"
 
     # PATCH entity_type_code
-    resp3 = api_client.patch(f"/api/v1/entities/{uid}/", {"entity_type_code": "COMPANY"}, format="json")
+    resp3 = api_client.patch(
+        f"/api/v1/entities/{uid}/", {"entity_type_code": "COMPANY"}, format="json"
+    )
     assert resp3.status_code == 201
     assert resp3.data["entity_uid"] == uid
 
@@ -102,7 +106,9 @@ def test_api_asof(api_client, entity_type):
     resp = api_client.post("/api/v1/entities/", payload, format="json")
     uid = resp.data["entity_uid"]
 
-    as_of_date = (timezone.now() + timezone.timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    as_of_date = (timezone.now() + timezone.timedelta(seconds=1)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
 
     resp2 = api_client.get(f"/api/v1/entities/entities-asof/?as_of={as_of_date}")
     assert resp2.status_code == 200
@@ -116,8 +122,18 @@ def test_api_diff(api_client, entity_type):
     uid = resp.data["entity_uid"]
 
     now = timezone.now()
-    f = (now - timedelta(minutes=1)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    t = (now + timedelta(minutes=1)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    f = (
+        (now - timedelta(minutes=1))
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+    t = (
+        (now + timedelta(minutes=1))
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
     resp2 = api_client.get(f"/api/v1/entities/diff/?from={f}&to={t}")
     assert resp2.status_code == 200
@@ -151,13 +167,21 @@ def test_api_entity_detail_create_and_update(api_client, entity_type):
     uid = resp.data["entity_uid"]
 
     # define detail
-    d_payload = {"entity_uid": uid, "detail_code": "EMAIL", "detail_value": "valentyn@gmail.com"}
+    d_payload = {
+        "entity_uid": uid,
+        "detail_code": "EMAIL",
+        "detail_value": "valentyn@gmail.com",
+    }
     resp2 = api_client.post("/api/v1/details/", d_payload, format="json")
     assert resp2.status_code == 201
     detail_id = resp2.data["id"]
 
     # update detail
-    resp3 = api_client.patch(f"/api/v1/details/{detail_id}/", {"detail_value": "valentyn@new.com"}, format="json")
+    resp3 = api_client.patch(
+        f"/api/v1/details/{detail_id}/",
+        {"detail_value": "valentyn@new.com"},
+        format="json",
+    )
     assert resp3.status_code == 200
     assert resp3.data["detail_value"] == "valentyn@new.com"
     detail_id = resp3.data["id"]

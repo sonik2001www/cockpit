@@ -12,4 +12,6 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
+RUN black --check . && flake8 .
+
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

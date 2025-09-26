@@ -6,6 +6,7 @@ from crm.models import Entity, EntityDetail, AuditLog, EntityType
 
 def _hashdiff(payload: dict) -> str:
     import json
+
     blob = json.dumps(payload, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
@@ -13,7 +14,11 @@ def _hashdiff(payload: dict) -> str:
 @transaction.atomic
 def upsert_entity(*, entity_uid, entity_type_code, display_name, change_ts, actor):
     et = EntityType.objects.get(code=entity_type_code)
-    payload = {"entity_uid": str(entity_uid), "entity_type": et.code, "display_name": display_name}
+    payload = {
+        "entity_uid": str(entity_uid),
+        "entity_type": et.code,
+        "display_name": display_name,
+    }
     h = _hashdiff(payload)
 
     current = Entity.objects.filter(entity_uid=entity_uid, is_current=True).first()
@@ -48,7 +53,11 @@ def upsert_entity(*, entity_uid, entity_type_code, display_name, change_ts, acto
 
 @transaction.atomic
 def upsert_detail(*, entity_uid, detail_code, detail_value, change_ts, actor):
-    payload = {"entity_uid": str(entity_uid), "detail_code": detail_code, "detail_value": detail_value}
+    payload = {
+        "entity_uid": str(entity_uid),
+        "detail_code": detail_code,
+        "detail_value": detail_value,
+    }
     h = _hashdiff(payload)
     current = EntityDetail.objects.filter(
         entity_uid=entity_uid, detail_code=detail_code, is_current=True

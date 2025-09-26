@@ -6,8 +6,12 @@ from rest_framework.response import Response
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
 from .models import Entity, EntityDetail, EntityType
-from .serializers import EntityCreateSerializer, EntityResponseSerializer, DetailSerializer, EntityDetailSerializer, \
-    EntityTypeSerializer
+from .serializers import (
+    EntityCreateSerializer,
+    EntityResponseSerializer,
+    EntityDetailSerializer,
+    EntityTypeSerializer,
+)
 from .services.scd2 import upsert_entity, upsert_detail
 from django.utils import timezone
 
@@ -20,20 +24,21 @@ class EntityTypeViewSet(viewsets.ModelViewSet):
     PATCH /api/v1/types/{id}/  -> update (id)
     DELETE /api/v1/types/{id}/ -> delete (id)
     """
+
     queryset = EntityType.objects.all()
     serializer_class = EntityTypeSerializer
 
 
 class EntityViewSet(viewsets.ViewSet):
     """
-        GET /api/v1/entities?q=...&type=PERSON
-        GET /api/v1/entities/{uid}
-        POST /api/v1/entities
-        PATCH /api/v1/entities/{uid}
-        GET /api/v1/entities/{uid}/history
-        GET /api/v1/entities-asof?as_of=YYYY-MM-DDTHH:MM:SSZ
-        GET /api/v1/entities/diff?from=...&to=...
-        """
+    GET /api/v1/entities?q=...&type=PERSON
+    GET /api/v1/entities/{uid}
+    POST /api/v1/entities
+    PATCH /api/v1/entities/{uid}
+    GET /api/v1/entities/{uid}/history
+    GET /api/v1/entities-asof?as_of=YYYY-MM-DDTHH:MM:SSZ
+    GET /api/v1/entities/diff?from=...&to=...
+    """
 
     # GET /api/v1/entities?q=...&type=PERSON
     def list(self, request):
@@ -50,10 +55,12 @@ class EntityViewSet(viewsets.ViewSet):
     # GET /api/v1/entities/{uid}
     def retrieve(self, request, pk=None):
         obj = Entity.objects.filter(entity_uid=pk, is_current=True).first()
-        if not obj: return Response(status=404)
+        if not obj:
+            return Response(status=404)
         data = EntityResponseSerializer(obj).data
-        details = EntityDetail.objects.filter(entity_uid=pk, is_current=True)\
-                                      .values("detail_code","detail_value")
+        details = EntityDetail.objects.filter(entity_uid=pk, is_current=True).values(
+            "detail_code", "detail_value"
+        )
         data["details"] = list(details)
         return Response(data)
 
@@ -83,7 +90,8 @@ class EntityViewSet(viewsets.ViewSet):
 
         payload = {
             "entity_uid": pk,
-            "entity_type_code": request.data.get("entity_type_code") or obj.entity_type.code,
+            "entity_type_code": request.data.get("entity_type_code")
+            or obj.entity_type.code,
             "display_name": request.data.get("display_name") or obj.display_name,
         }
 
@@ -99,8 +107,11 @@ class EntityViewSet(viewsets.ViewSet):
     # GET /api/v1/entities/{uid}/history
     @action(detail=True, methods=["get"])
     def history(self, request, pk=None):
-        objs = Entity.objects.filter(entity_uid=pk).order_by("valid_from")\
-                             .values("display_name","valid_from","valid_to","is_current")
+        objs = (
+            Entity.objects.filter(entity_uid=pk)
+            .order_by("valid_from")
+            .values("display_name", "valid_from", "valid_to", "is_current")
+        )
         return Response(list(objs))
 
     # GET /api/v1/entities-asof?as_of=YYYY-MM-DDTHH:MM:SSZ
@@ -126,8 +137,11 @@ class EntityViewSet(viewsets.ViewSet):
         if not (f and t and f < t):
             return Response({"detail": "Invalid range"}, status=400)
 
-        changed_entities = Entity.objects.filter(updated_at__gte=f, updated_at__lt=t)\
-                                         .values_list("entity_uid", flat=True).distinct()
+        changed_entities = (
+            Entity.objects.filter(updated_at__gte=f, updated_at__lt=t)
+            .values_list("entity_uid", flat=True)
+            .distinct()
+        )
 
         return Response({"entities_changed": list(changed_entities)})
 

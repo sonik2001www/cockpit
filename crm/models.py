@@ -7,7 +7,8 @@ class EntityType(models.Model):
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=255)
 
-    def __str__(self): return self.code
+    def __str__(self):
+        return self.code
 
 
 class Entity(models.Model):
@@ -16,10 +17,10 @@ class Entity(models.Model):
     display_name = models.TextField()
 
     valid_from = models.DateTimeField()
-    valid_to   = models.DateTimeField(null=True, blank=True)
+    valid_to = models.DateTimeField(null=True, blank=True)
     is_current = models.BooleanField(default=True)
 
-    hashdiff   = models.CharField(max_length=128, db_index=True)
+    hashdiff = models.CharField(max_length=128, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,7 +29,7 @@ class Entity(models.Model):
             models.UniqueConstraint(
                 fields=["entity_uid"],
                 condition=Q(is_current=True),
-                name="uniq_entity_current"
+                name="uniq_entity_current",
             ),
         ]
         indexes = [
@@ -38,15 +39,15 @@ class Entity(models.Model):
 
 
 class EntityDetail(models.Model):
-    entity_uid  = models.UUIDField(db_index=True)
+    entity_uid = models.UUIDField(db_index=True)
     detail_code = models.CharField(max_length=64)
     detail_value = models.TextField()
 
     valid_from = models.DateTimeField()
-    valid_to   = models.DateTimeField(null=True, blank=True)
+    valid_to = models.DateTimeField(null=True, blank=True)
     is_current = models.BooleanField(default=True)
 
-    hashdiff   = models.CharField(max_length=128, db_index=True)
+    hashdiff = models.CharField(max_length=128, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -55,7 +56,7 @@ class EntityDetail(models.Model):
             models.UniqueConstraint(
                 fields=["entity_uid", "detail_code"],
                 condition=Q(is_current=True),
-                name="uniq_entity_detail_current"
+                name="uniq_entity_detail_current",
             ),
         ]
         indexes = [
@@ -65,10 +66,9 @@ class EntityDetail(models.Model):
 
 
 class AuditLog(models.Model):
-    entity_uid  = models.UUIDField()
+    entity_uid = models.UUIDField()
     detail_code = models.CharField(max_length=64, null=True, blank=True)
     before_value = models.TextField(null=True, blank=True)
-    after_value  = models.TextField(null=True, blank=True)
+    after_value = models.TextField(null=True, blank=True)
     actor = models.CharField(max_length=128)
     changed_at = models.DateTimeField(auto_now_add=True)
-
