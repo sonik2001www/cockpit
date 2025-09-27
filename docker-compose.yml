@@ -14,12 +14,9 @@ services:
       - .env
     environment:
       RUNNING_IN_DOCKER: "1"
-      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME}
-      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
-      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
     command: >
       sh -c "python manage.py migrate &&
-             python manage.py createsuperuser --noinput || true &&
+             python manage.py create_superuser_and_token &&
              python manage.py runserver 0.0.0.0:8000"
 
   db:

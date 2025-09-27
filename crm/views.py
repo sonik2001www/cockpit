@@ -1,5 +1,6 @@
 import uuid
-
+from drf_spectacular.utils import extend_schema
+from .permissions import ReadOnlyOrTokenRequired
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ from .services.scd2 import upsert_entity, upsert_detail
 from django.utils import timezone
 
 
+@extend_schema(tags=["Types"])
 class EntityTypeViewSet(viewsets.ModelViewSet):
     """
     GET /api/v1/types/         -> list
@@ -27,8 +29,10 @@ class EntityTypeViewSet(viewsets.ModelViewSet):
 
     queryset = EntityType.objects.all()
     serializer_class = EntityTypeSerializer
+    permission_classes = [ReadOnlyOrTokenRequired]
 
 
+@extend_schema(tags=["Entities"])
 class EntityViewSet(viewsets.ViewSet):
     """
     GET /api/v1/entities?q=...&type=PERSON
@@ -39,6 +43,7 @@ class EntityViewSet(viewsets.ViewSet):
     GET /api/v1/entities-asof?as_of=YYYY-MM-DDTHH:MM:SSZ
     GET /api/v1/entities/diff?from=...&to=...
     """
+    permission_classes = [ReadOnlyOrTokenRequired]
 
     # GET /api/v1/entities?q=...&type=PERSON
     def list(self, request):
@@ -146,7 +151,9 @@ class EntityViewSet(viewsets.ViewSet):
         return Response({"entities_changed": list(changed_entities)})
 
 
+@extend_schema(tags=["Details"])
 class EntityDetailViewSet(viewsets.ViewSet):
+    permission_classes = [ReadOnlyOrTokenRequired]
 
     # GET /api/v1/details/?entity_uid=...
     def list(self, request):
