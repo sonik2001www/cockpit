@@ -5,11 +5,21 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 from crm.models import EntityType, Entity, EntityDetail
+from django.contrib.auth import get_user_model
+from rest_framework.authtoken.models import Token
 
 
 @pytest.fixture
-def api_client():
-    return APIClient()
+def api_client(db):
+    User = get_user_model()
+    user = User.objects.create_user(
+        username="testuser", password="testpass", email="test@example.com"
+    )
+    token, _ = Token.objects.get_or_create(user=user)
+
+    client = APIClient()
+    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    return client
 
 
 @pytest.fixture
