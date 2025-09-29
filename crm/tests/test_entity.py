@@ -6,7 +6,6 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 from crm.models import EntityType, Entity, EntityDetail
 from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
 
 
 @pytest.fixture
@@ -15,10 +14,17 @@ def api_client(db):
     user = User.objects.create_user(
         username="testuser", password="testpass", email="test@example.com"
     )
-    token, _ = Token.objects.get_or_create(user=user)
 
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+    resp = client.post(
+        "/api/v1/auth/token/",
+        {"username": "testuser", "password": "testpass"},
+        format="json",
+    )
+    access = resp.data["access"]
+
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
     return client
 
 

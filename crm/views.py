@@ -43,6 +43,7 @@ class EntityViewSet(viewsets.ViewSet):
     GET /api/v1/entities-asof?as_of=YYYY-MM-DDTHH:MM:SSZ
     GET /api/v1/entities/diff?from=...&to=...
     """
+
     permission_classes = [ReadOnlyOrTokenRequired]
 
     # GET /api/v1/entities?q=...&type=PERSON
@@ -70,6 +71,10 @@ class EntityViewSet(viewsets.ViewSet):
         return Response(data)
 
     # POST /api/v1/entities
+    @extend_schema(
+        request=EntityCreateSerializer,
+        responses={201: EntityResponseSerializer, 200: EntityResponseSerializer},
+    )
     def create(self, request):
         s = EntityCreateSerializer(data=request.data)
         s.is_valid(raise_exception=True)
@@ -78,7 +83,11 @@ class EntityViewSet(viewsets.ViewSet):
         if "entity_uid" not in payload:
             payload["entity_uid"] = uuid.uuid4()
 
-        row, created = upsert_entity(actor="api", change_ts=None, **payload)
+        row, created = upsert_entity(
+            actor=request.user if request.user.is_authenticated else None,
+            change_ts=None,
+            **payload,
+        )
 
         if created:
             st = status.HTTP_201_CREATED
@@ -100,7 +109,11 @@ class EntityViewSet(viewsets.ViewSet):
             "display_name": request.data.get("display_name") or obj.display_name,
         }
 
-        row, created = upsert_entity(actor="api", change_ts=None, **payload)
+        row, created = upsert_entity(
+            actor=request.user if request.user.is_authenticated else None,
+            change_ts=None,
+            **payload,
+        )
 
         if created:
             st = status.HTTP_201_CREATED
@@ -174,11 +187,15 @@ class EntityDetailViewSet(viewsets.ViewSet):
         return Response(EntityDetailSerializer(obj).data)
 
     # POST /api/v1/details/
+    @extend_schema(
+        request=EntityDetailSerializer,
+        responses={201: EntityDetailSerializer, 200: EntityDetailSerializer},
+    )
     def create(self, request):
         s = EntityDetailSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         row, created = upsert_detail(
-            actor="api",
+            actor=request.user if request.user.is_authenticated else None,
             change_ts=timezone.now(),
             **s.validated_data,
         )
@@ -199,7 +216,7 @@ class EntityDetailViewSet(viewsets.ViewSet):
             "detail_value": request.data.get("detail_value"),
         }
         row, _ = upsert_detail(
-            actor="api",
+            actor=request.user if request.user.is_authenticated else None,
             change_ts=timezone.now(),
             **payload,
         )

@@ -18,12 +18,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularAPIView
+from rest_framework.authtoken.views import obtain_auth_token
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     path("api/v1/", include("crm.urls")),
-
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/v1/auth/", include("users.urls")),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
 ]

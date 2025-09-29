@@ -36,7 +36,9 @@ class Command(BaseCommand):
 
                     if not entity_type_code or not display_name:
                         self.stdout.write(
-                            self.style.WARNING(f"Skipping row with missing fields: {row}")
+                            self.style.WARNING(
+                                f"Skipping row with missing fields: {row}"
+                            )
                         )
                         continue
 
