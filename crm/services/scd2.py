@@ -59,16 +59,21 @@ def upsert_detail(*, entity_uid, detail_code, detail_value, change_ts, actor):
         "detail_value": detail_value,
     }
     h = _hashdiff(payload)
+
     current = EntityDetail.objects.filter(
         entity_uid=entity_uid, detail_code=detail_code, is_current=True
     ).first()
+
     if current and current.hashdiff == h:
         return current, False
+
     now = change_ts or timezone.now()
+
     if current:
         current.valid_to = now
         current.is_current = False
         current.save(update_fields=["valid_to", "is_current", "updated_at"])
+
     new_row = EntityDetail.objects.create(
         entity_uid=entity_uid,
         detail_code=detail_code,
@@ -77,6 +82,7 @@ def upsert_detail(*, entity_uid, detail_code, detail_value, change_ts, actor):
         is_current=True,
         hashdiff=h,
     )
+
     AuditLog.objects.create(
         entity_uid=entity_uid,
         detail_code=detail_code,
@@ -84,4 +90,5 @@ def upsert_detail(*, entity_uid, detail_code, detail_value, change_ts, actor):
         after_value=detail_value,
         actor=actor,
     )
+
     return new_row, True

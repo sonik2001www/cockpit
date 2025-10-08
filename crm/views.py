@@ -5,13 +5,13 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils.dateparse import parse_datetime
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from .models import Entity, EntityDetail, EntityType
 from .serializers import (
     EntityCreateSerializer,
     EntityResponseSerializer,
     EntityDetailSerializer,
-    EntityTypeSerializer,
+    EntityTypeSerializer, EntityUpdateSerializer,
 )
 from .services.scd2 import upsert_entity, upsert_detail
 from django.utils import timezone
@@ -30,6 +30,21 @@ class EntityTypeViewSet(viewsets.ModelViewSet):
     queryset = EntityType.objects.all()
     serializer_class = EntityTypeSerializer
     permission_classes = [ReadOnlyOrTokenRequired]
+
+    def destroy(self, request, pk=None):
+        obj = EntityType.objects.filter(pk=pk).first()
+
+        if not obj:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            obj.delete()
+        except ProtectedError:
+            return Response(
+                {"detail": "Cannot delete type: there are ENTITIES referencing it."},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=["Entities"])
@@ -97,6 +112,10 @@ class EntityViewSet(viewsets.ViewSet):
         return Response(EntityResponseSerializer(row).data, status=st)
 
     # PATCH /api/v1/entities/{uid}
+    @extend_schema(
+        request=EntityUpdateSerializer,
+        responses={204: EntityResponseSerializer, 200: EntityResponseSerializer},
+    )
     def partial_update(self, request, pk=None):
         obj = Entity.objects.filter(entity_uid=pk, is_current=True).first()
         if not obj:
@@ -116,7 +135,7 @@ class EntityViewSet(viewsets.ViewSet):
         )
 
         if created:
-            st = status.HTTP_201_CREATED
+            st = status.HTTP_204_NO_CONTENT
         else:
             st = status.HTTP_200_OK
 
@@ -128,7 +147,7 @@ class EntityViewSet(viewsets.ViewSet):
         objs = (
             Entity.objects.filter(entity_uid=pk)
             .order_by("valid_from")
-            .values("display_name", "valid_from", "valid_to", "is_current")
+            .values("display_name", "entity_type", "valid_from", "valid_to", "is_current")
         )
         return Response(list(objs))
 
@@ -163,6 +182,19 @@ class EntityViewSet(viewsets.ViewSet):
 
         return Response({"entities_changed": list(changed_entities)})
 
+    # DELETE /api/v1/entities/{uid}
+    def destroy(self, request, pk=None):
+        obj = Entity.objects.filter(entity_uid=pk, is_current=True).first()
+
+        if not obj:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        obj.valid_to = timezone.now()
+        obj.is_current = False
+        obj.save(update_fields=["valid_to", "is_current"])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @extend_schema(tags=["Details"])
 class EntityDetailViewSet(viewsets.ViewSet):
@@ -194,41 +226,57 @@ class EntityDetailViewSet(viewsets.ViewSet):
     def create(self, request):
         s = EntityDetailSerializer(data=request.data)
         s.is_valid(raise_exception=True)
+
         row, created = upsert_detail(
             actor=request.user if request.user.is_authenticated else None,
             change_ts=timezone.now(),
             **s.validated_data,
         )
+
         return Response(
             EntityDetailSerializer(row).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 
-    # PATCH /api/v1/details/{id}
+    # PATCH /api/v1/details/{uid}
+    @extend_schema(
+        request=EntityDetailSerializer,
+        responses={204: EntityDetailSerializer, 200: EntityDetailSerializer},
+    )
     def partial_update(self, request, pk=None):
-        obj = EntityDetail.objects.filter(id=pk, is_current=True).first()
+        obj = EntityDetail.objects.filter(entity_uid=pk, is_current=True).first()
+
         if not obj:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         payload = {
-            "entity_uid": obj.entity_uid,
-            "detail_code": obj.detail_code,
-            "detail_value": request.data.get("detail_value"),
+            "entity_uid": pk,
+            "detail_code": request.data.get("detail_code") or obj.detail_code,
+            "detail_value": request.data.get("detail_value") or obj.detail_value,
         }
-        row, _ = upsert_detail(
+
+        row, created = upsert_detail(
             actor=request.user if request.user.is_authenticated else None,
-            change_ts=timezone.now(),
+            change_ts=None,
             **payload,
         )
-        return Response(EntityDetailSerializer(row).data)
+
+        if created:
+            st = status.HTTP_204_NO_CONTENT
+        else:
+            st = status.HTTP_200_OK
+
+        return Response(EntityDetailSerializer(row).data, status=st)
 
     # DELETE /api/v1/details/{id}
     def destroy(self, request, pk=None):
-        obj = EntityDetail.objects.filter(id=pk, is_current=True).first()
+        obj = EntityDetail.objects.filter(pk=pk, is_current=True).first()
+
         if not obj:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         obj.valid_to = timezone.now()
         obj.is_current = False
         obj.save(update_fields=["valid_to", "is_current"])
+
         return Response(status=status.HTTP_204_NO_CONTENT)

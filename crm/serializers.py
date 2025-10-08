@@ -14,10 +14,15 @@ class EntityCreateSerializer(serializers.Serializer):
     display_name = serializers.CharField()
 
 
+class EntityUpdateSerializer(serializers.Serializer):
+    entity_type_code = serializers.CharField()
+    display_name = serializers.CharField()
+
+
 class EntityResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Entity
-        fields = ["entity_uid", "display_name", "valid_from", "valid_to", "is_current"]
+        fields = ["entity_uid", "display_name", "entity_type", "valid_from", "valid_to", "is_current"]
 
 
 class DetailSerializer(serializers.Serializer):
@@ -38,4 +43,4 @@ class EntityDetailSerializer(serializers.ModelSerializer):
             "valid_to",
             "is_current",
         ]
-        read_only_fields = ["id", "valid_from", "valid_to", "is_current"]
+        read_only_fields = ["id", "entity_uid", "valid_from", "valid_to", "is_current"]
