@@ -11,7 +11,7 @@ from .serializers import (
     EntityCreateSerializer,
     EntityResponseSerializer,
     EntityDetailSerializer,
-    EntityTypeSerializer, EntityUpdateSerializer,
+    EntityTypeSerializer, EntityUpdateSerializer, DetailSerializer,
 )
 from .services.scd2 import upsert_entity, upsert_detail
 from django.utils import timezone
@@ -220,11 +220,11 @@ class EntityDetailViewSet(viewsets.ViewSet):
 
     # POST /api/v1/details/
     @extend_schema(
-        request=EntityDetailSerializer,
+        request=DetailSerializer,
         responses={201: EntityDetailSerializer, 200: EntityDetailSerializer},
     )
     def create(self, request):
-        s = EntityDetailSerializer(data=request.data)
+        s = DetailSerializer(data=request.data)
         s.is_valid(raise_exception=True)
 
         row, created = upsert_detail(
