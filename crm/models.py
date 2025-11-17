@@ -12,6 +12,7 @@ class EntityType(models.Model):
 
 
 class Entity(models.Model):
+
     entity_uid = models.UUIDField(default=uuid.uuid4, db_index=True)
     entity_type = models.ForeignKey(EntityType, on_delete=models.PROTECT)
     display_name = models.TextField()
